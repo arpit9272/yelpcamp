@@ -4,11 +4,13 @@ const path = require("path");
 const mongoose = require("mongoose")
 const Campground = require("./models/campground")
 const methodOverride = require('method-override')
+const ejsMate = require("ejs-mate")
 
 app.set("view engine", "ejs")
 app.set("views",path.join(__dirname,"views"))
 app.use(express.urlencoded({extended:true}))
 app.use(methodOverride('_method'))
+app.engine("ejs", ejsMate)
 
 mongoose
   .connect("mongodb://localhost/yelp-camp", {
@@ -44,10 +46,13 @@ app.get("/campgrounds/:id", async(req,res)=>{
 })
 
 app.post("/campgrounds", async(req,res) => {
-  const {title, location} = req.body.campground;
+  const {title, location,price,description,image} = req.body.campground;
   const newCampground = new Campground({
     title,
-    location
+    location,
+    price,
+    description,
+    image
   })
   await newCampground.save();
   res.redirect(`/campgrounds/${newCampground._id}`)
