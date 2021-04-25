@@ -45,17 +45,21 @@ app.get("/campgrounds/:id", async(req,res)=>{
   res.render("campgrounds/show",{campground})
 })
 
-app.post("/campgrounds", async(req,res) => {
-  const {title, location,price,description,image} = req.body.campground;
-  const newCampground = new Campground({
-    title,
-    location,
-    price,
-    description,
-    image
-  })
-  await newCampground.save();
-  res.redirect(`/campgrounds/${newCampground._id}`)
+app.post("/campgrounds", async(req,res, next) => {
+  try {
+    const {title, location,price,description,image} = req.body.campground;
+    const newCampground = new Campground({
+      title,
+      location,
+      price,
+      description,
+      image
+    })
+    await newCampground.save();
+    res.redirect(`/campgrounds/${newCampground._id}`) 
+  } catch (e) {
+    next(e);
+  }
 })
 
 app.get("/campgrounds/:id/edit",async (req,res) => {
@@ -76,6 +80,10 @@ app.delete("/campgrounds/:id", async(req,res) => {
   const {id} = req.params;
   await Campground.findByIdAndDelete(id);
   res.redirect("/campgrounds")
+})
+
+app.use((err, req, res, next) => {
+  res.send("Oh boy! Something went wrong")
 })
 
 app.listen(3000, () => {
