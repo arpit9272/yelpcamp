@@ -6,6 +6,7 @@ const Campground = require("./models/campground")
 const methodOverride = require('method-override')
 const ejsMate = require("ejs-mate")
 const catchAsync = require("./utils/catchAsync")
+const ExpressError = require("./utils/ExpressError")
 
 app.set("view engine", "ejs")
 app.set("views",path.join(__dirname,"views"))
@@ -79,8 +80,13 @@ app.delete("/campgrounds/:id", catchAsync(async(req,res) => {
   res.redirect("/campgrounds")
 }))
 
+app.all("*", (req, res, next) => {
+  next(new ExpressError("Page Not Found !!", 404))
+})
+
 app.use((err, req, res, next) => {
-  res.send("Oh boy! Something went wrong")
+  const {statusCode=500, message="Something went wrong"} = err
+  res.status(statusCode).send(message)
 })
 
 app.listen(3000, () => {
