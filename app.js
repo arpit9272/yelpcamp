@@ -7,6 +7,17 @@ const methodOverride = require('method-override')
 const ejsMate = require("ejs-mate")
 const catchAsync = require("./utils/catchAsync")
 const ExpressError = require("./utils/ExpressError")
+const {campgroundSchema} = require('./schemas')
+
+const validateCampground = (req, res, next) => {
+  const {error} = campgroundSchema.validate(req.body);
+  if(error){
+    const msg = error.details.map(el => el.message).join(',')
+    throw new ExpressError(msg, 400)
+  } else{
+    next();
+  }
+}
 
 app.set("view engine", "ejs")
 app.set("views",path.join(__dirname,"views"))
@@ -47,15 +58,19 @@ app.get("/campgrounds/:id", catchAsync(async(req,res)=>{
   res.render("campgrounds/show",{campground})
 }))
 
-app.post("/campgrounds", catchAsync(async(req,res, next) => {
-    const {title, location,price,description,image} = req.body.campground;
-    const newCampground = new Campground({
-      title,
-      location,
-      price,
-      description,
-      image
-    })
+app.post("/campgrounds",validateCampground, catchAsync(async(req,res, next) => {
+  // if (!req.body.campground) throw new ExpressError("Invalid campground data",404);
+
+  
+    // const {title, location,price,description,image} = req.body.campground;
+    // const newCampground = new Campground({
+    //   title,
+    //   location,
+    //   price,
+    //   description,
+    //   image
+    // })
+    const newCampground = new Campground(req.body.campground);
     await newCampground.save();
     res.redirect(`/campgrounds/${newCampground._id}`) 
 }))
@@ -66,7 +81,7 @@ app.get("/campgrounds/:id/edit",catchAsync(async (req,res) => {
   res.render("campgrounds/edit", {campground})
 }))
 
-app.put("/campgrounds/:id", catchAsync(async (req, res) => {
+app.put("/campgrounds/:id",validateCampground, catchAsync(async (req, res) => {
   const {id} = req.params;
   // const {title, location} = req.body.campground;
   // const campground = await Campground.findByIdAndUpdate(id, {title, location})
@@ -81,12 +96,14 @@ app.delete("/campgrounds/:id", catchAsync(async(req,res) => {
 }))
 
 app.all("*", (req, res, next) => {
-  next(new ExpressError("Page Not Found !!", 404))
+  next(new ExpressError("Page Not Found!", 404))
 })
 
 app.use((err, req, res, next) => {
   const {statusCode=500, message="Something went wrong"} = err
-  res.status(statusCode).send(message)
+  // res.status(statusCode).send(message)
+  if (!err.message) err.message = 'Oh No, Something Went Wrong!';
+  res.status(statusCode).render('error', {err})
 })
 
 app.listen(3000, () => {
